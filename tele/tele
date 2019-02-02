@@ -1,0 +1,82 @@
+#!/bin/bash
+
+function typo()
+{
+    echo -e "Use \"--help\" for help"
+}
+
+function helpMe()
+{
+    echo -e "usage :\n\t$0 [option] [name]"
+    echo -e "option :\n"
+    echo -e "\t--new\t\tLaunch telegram with new data ([name])"
+    echo -e "\t--list\t\tList of data."
+    echo -e "\t--help\t\tHelp"
+}
+
+function initOne()
+{
+    if [ $EUID -eq 0 ]; then
+        echo "Please use normal user."
+        exit 666
+    fi
+    
+    if [ ! -d ~/.telegram ]; then
+        mkdir ~/.telegram
+    fi
+}
+
+function launchNow()
+{
+    if [ ! -d $HOME/.telegram/$1 ]; then
+        echo "invalid data"
+        exit 2
+    fi
+
+    /opt/telegram/Telegram -many -workdir $HOME/.telegram/$1 &> /dev/null &
+}
+
+function addNew()
+{
+    if [ -z $1 ]; then
+        echo -e "Error. Use \"--help\" for help"
+        exit 3
+    fi
+    
+    if [ -d ~/.telegram/$1 ]; then
+        echo -e "\"$1\" already used"
+        exit 4
+    fi
+    
+    mkdir ~/.telegram/$1
+    launchNow $1
+}
+
+function list()
+{
+    for i in `ls $HOME/.telegram`; do
+	echo "[*] $i";
+    done
+}
+
+function selArgAndFire()
+{
+    initOne
+    
+    case "$1" in
+        --new)
+                addNew $2
+                    ;;
+	--list)
+		list
+		    ;;
+        --help)
+                helpMe
+                    ;;
+         *)
+                launchNow $1
+                    ;;
+    esac
+}
+
+selArgAndFire $1 $2
