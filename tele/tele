@@ -33,7 +33,7 @@ function launchNow()
         exit 2
     fi
 
-    /opt/telegram/Telegram -many -workdir $HOME/.telegram/$1 &> /dev/null &
+    /opt/Telegram/Telegram -many -workdir $HOME/.telegram/$1 &> /dev/null &
 }
 
 function addNew()
