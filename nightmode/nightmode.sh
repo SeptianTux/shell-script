@@ -183,7 +183,7 @@ function helpMe()
     echo -e "\t* on\t: Turn on night mode."
     echo -e "\t* off\t: Turn off night mode."
     echo -e "\t* auto\t: Run in auto mode."
-    echo -e "\t* pid\t: Get pid of nightmode.sh if running."
+    echo -e "\t* pid\t: Get pid of $(basename $0)"
     echo -e "\t* help\t: Help."
 }
 
