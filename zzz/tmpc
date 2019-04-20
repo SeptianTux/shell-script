@@ -53,6 +53,19 @@ Prev()
     mpc prev
 }
 
+Player()
+{
+    case $1 in
+    "ncmpcpp")
+        echo "hello"
+        gnome-terminal --hide-menubar --title="ncmpcpp" -e ncmpcpp &> /dev/null &
+        ;;
+    "sonata")
+        sonata &> /dev/null &
+        ;;
+    esac
+}
+
 RunMpdIfNotRunning
 
 case $1 in
@@ -70,5 +83,8 @@ case $1 in
         ;;
     "stop")
         Stop
+        ;;
+    "sonata" | "ncmpcpp")
+        Player $1
         ;;
 esac
