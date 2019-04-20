@@ -1,0 +1,74 @@
+#!/bin/bash
+
+RunMpdIfNotRunning()
+{
+    mpc status &> /dev/null
+
+    if [ $? -gt 0 ]
+    then
+        mpd &> /dev/null
+        
+        if [ $? -gt 0 ]
+        then
+            echo "error!"
+            echo "mpd hasn't started correctly."
+            echo "exit."
+            exit 69
+        fi
+    fi
+}
+
+Play()
+{
+    case $(mpc status | grep -o '^\[[a-z]*\]' | grep -o '[a-z]*') in
+        "paused")
+            mpc play
+            ;;
+        "playing")
+            Pause
+            ;;
+        *)
+            mpc play
+            ;;
+    esac
+}
+
+Pause()
+{
+    mpc pause
+}
+
+Stop()
+{
+    mpc stop
+}
+
+Next()
+{
+    mpc next
+}
+
+Prev()
+{
+    mpc prev
+}
+
+RunMpdIfNotRunning
+
+case $1 in
+    "play")
+        Play
+        ;;
+    "pause")
+        Pause
+        ;;
+    "next")
+        Next
+        ;;
+    "prev")
+        Prev
+        ;;
+    "stop")
+        Stop
+        ;;
+esac
