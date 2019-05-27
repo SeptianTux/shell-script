@@ -1,10 +1,10 @@
 #/usr/bin/env bash
 
-if [ -d ~/.telegram ]; then
+if [ -d ~/.tele ]; then
     
     acc_list_str="--help --new"
     
-    for j in `ls ~/.telegram`; do
+    for j in `ls ~/.tele`; do
         acc_list_str="$acc_list_str $j"
     done
     
