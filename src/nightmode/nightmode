@@ -1,0 +1,295 @@
+#!/bin/bash
+
+NIGHT_MODE_CMD="/usr/bin/redshift -O 4500"
+RESET_CMD="/usr/bin/redshift -x"
+NORMAL_MODE_CMD="/usr/bin/redshift -O 6500"
+NOW_H=$(date "+%H")
+NIGHT_MODE=1
+NIGHT_MODE_LOOP_STAT=0
+NORMAL_MODE=0
+LOCK_FILE=/var/lock/nightmode.lock
+TMP_DIR=/tmp/$(basename $0)-$USER
+TMP_FILE_NIGHT_MODE_STAT=$TMP_DIR/stat
+TMP_FILE_NIGHT_MODE_STAT_LOCK=$TMP_DIR/stat_lock
+
+
+function one()
+{
+    termIfRoot
+    isRunning
+
+    if [ $? -eq 0 ]
+    then
+        echo "$(basename $0) is already running."
+        exit 69
+    fi
+
+    if [ ! -d $TMP_DIR ]
+    then
+        mkdir $TMP_DIR
+
+        if [ ! $? -eq 0 ]
+        then
+            exit 65
+        fi
+    fi
+}
+
+function termIfRoot()
+{
+    if [ $EUID -eq 0 ]
+    then
+        echo "Please use normal user to run this script."
+        exit 66
+    fi
+}
+
+function isRunning()
+{
+    local lockfile_val=""
+
+    if [ -f $LOCK_FILE ]
+    then
+        lockfile_val=$(cat $LOCK_FILE)
+
+        if  [ -d /proc/$lockfile_val ] && [ $(cat /proc/$lockfile_val/cmdline | grep -c $(basename $0)) -gt 0 ]
+        then
+           return 0
+        fi
+    fi
+
+    return 1
+}
+
+function setStat()
+{
+    case $1 in
+        "1" | "0" )
+            echo $1 > $TMP_FILE_NIGHT_MODE_STAT
+            ;;
+        * )
+            echo 0 > $TMP_FILE_NIGHT_MODE_STAT
+            ;;
+    esac
+}
+
+function getStat()
+{
+    local temp
+
+    if [ ! -f $TMP_FILE_NIGHT_MODE_STAT ]
+    then
+        echo 0
+    else
+        temp=$(cat $TMP_FILE_NIGHT_MODE_STAT)
+
+        if [ ${#temp} -gt 1 ]
+        then
+            echo 0
+        else
+
+            if [ "$temp" == "1" ]
+            then
+                echo 1
+            else
+                echo 0
+            fi
+        fi
+    fi
+}
+
+function isStatLocked()
+{
+    local temp
+
+    if [ ! -f $TMP_FILE_NIGHT_MODE_STAT_LOCK ]
+    then
+        echo 0
+    else
+        temp=$(cat $TMP_FILE_NIGHT_MODE_STAT_LOCK)
+
+        if [ ${#temp} -gt 1 ]
+        then
+            echo 0
+        else
+
+            if [ "$temp" == "1" ]
+            then
+                echo 1
+            else
+                echo 0
+            fi
+        fi
+    fi
+}
+
+function updateNowVar()
+{
+    NOW_H=$(date "+%H")
+}	
+
+function setNightMode()
+{
+    if [ $NOW_H -gt 5 ] && [ $NOW_H -lt 18 ]
+    then
+        if [ ! $NORMAL_MODE -eq $NIGHT_MODE_LOOP_STAT ]
+        then
+            nightModeOff
+            NIGHT_MODE_LOOP_STAT=0
+        fi
+    else
+        if [ ! $NIGHT_MODE -eq $NIGHT_MODE_LOOP_STAT ]
+        then            
+            nightModeOn
+            NIGHT_MODE_LOOP_STAT=1
+        fi
+    fi
+}
+
+function nightModeOn()
+{
+    if [ $(getStat) == "0" ]
+    then
+        $RESET_CMD &> /dev/null
+        $NIGHT_MODE_CMD &> /dev/null
+        setStat "1"
+    fi
+}
+
+function nightModeOff()
+{
+    if [ $(getStat) == "1" ]
+    then
+        $RESET_CMD &> /dev/null
+        $NORMAL_MODE_CMD &> /dev/null
+        setStat "0"
+    fi
+}
+
+function nightModeOnOff()
+{
+    if [ $(getStat) == "1" ]
+    then
+        $RESET_CMD &> /dev/null
+        $NORMAL_MODE_CMD &> /dev/null
+        setStat "0"
+    elif [ $(getStat) == "0" ]
+    then
+        $RESET_CMD &> /dev/null
+        $NIGHT_MODE_CMD &> /dev/null
+        setStat "1"
+    fi
+}
+
+function exitNow()
+{
+    echo $1
+    exit $2
+}
+
+function looper()
+{
+    echo -n $BASHPID > $LOCK_FILE
+
+    sleep 2
+
+    while [ 1 ]
+    do
+        updateNowVar
+        setNightMode
+	
+        sleep 3
+    done
+}
+
+function killer()
+{
+    isRunning
+
+    if [ $? -eq 0 ]
+    then
+        kill $(cat $LOCK_FILE)
+        
+        if [ $? -eq 0 ]
+        then
+            echo "Killed."
+        else
+            echo "Kill failed. "
+        fi
+        
+        rm $LOCK_FILE
+    else
+        echo "Do nothing."
+    fi
+}
+
+function statSelf()
+{
+    isRunning
+
+    if [ $? -eq 0 ]
+    then
+        echo "Is running."
+    else
+        echo "Not running."
+    fi
+}
+
+function getPid()
+{
+    isRunning
+
+    if [ $? -eq 0 ]
+    then
+        cat $LOCK_FILE
+        echo
+    else
+        echo "Not running."
+    fi
+}
+
+function helpMe()
+{
+    echo -e "Usage  : $(basename $0) [option]\n"
+    echo "Option :"
+    echo -e "\t* stat-self\t: Running status."
+    echo -e "\t* stat\t: Nightmode status."
+    echo -e "\t* kill\t: Kill or terminate."
+    echo -e "\t* on\t: Turn on night mode."
+    echo -e "\t* off\t: Turn off night mode."
+    echo -e "\t* auto\t: Run in auto mode."
+    echo -e "\t* pid\t: Get pid of $(basename $0)"
+    echo -e "\t* help\t: Help."
+}
+
+function fire()
+{
+    one
+
+    looper &> /dev/null &
+}
+
+case $1 in
+    "kill" | "terminate") killer
+        ;;
+    "stat-self") statSelf
+        ;;
+    "stat") getStat
+        ;;
+    "help" | "-h" | "--help" ) helpMe
+        ;;
+    "on") nightModeOn
+        ;;
+    "off") nightModeOff
+        ;;
+    "on-off") nightModeOnOff
+        ;;
+    "pid") getPid
+        ;;
+    "auto") fire
+        ;;
+    "") echo "run in auto mode"; fire
+        ;;
+    *) helpMe
+        ;;
+esac

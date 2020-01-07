@@ -40,7 +40,20 @@ Pause()
 
 Stop()
 {
-    mpc stop
+    case $(mpc status | grep -o '^\[[a-z]*\]' | grep -o '[a-z]*') in
+        "paused")
+            mpc stop
+            ;;
+        "playing")
+            mpc stop
+            ;;
+        "")
+            mpc play
+            ;;
+        *)
+            mpc play
+            ;;
+    esac
 }
 
 Next()
@@ -53,15 +66,38 @@ Prev()
     mpc prev
 }
 
+SeekPlus()
+{
+    mpc seek +5
+}
+
+SeekMin()
+{
+    mpc seek -5
+}
+
+Status()
+{
+    mpc status
+}
+
 Player()
 {
     case $1 in
     "ncmpcpp")
         echo "hello"
         gnome-terminal --hide-menubar --title="ncmpcpp" -e ncmpcpp &> /dev/null &
+        exit 0
         ;;
     "sonata")
-        sonata &> /dev/null &
+        /opt/sonata/run-sonata &> /dev/null &
+        
+        if [ $? -gt 0 ]
+        then
+            exit 7
+        fi
+        
+        exit 0
         ;;
     esac
 }
@@ -83,6 +119,15 @@ case $1 in
         ;;
     "stop")
         Stop
+        ;;
+    "status")
+        Status
+        ;;
+    "seek-plus")
+        SeekPlus
+        ;;
+    "seek-min")
+        SeekMin
         ;;
     "sonata" | "ncmpcpp")
         Player $1

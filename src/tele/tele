@@ -54,8 +54,11 @@ function addNew()
 
 function list()
 {
+    h=1
+
     for i in `ls $HOME/.tele`; do
-	echo "[*] $i";
+        echo "[$h] $i";
+        let h=$h+1
     done
 }
 
