@@ -1,10 +1,10 @@
 install:
-	cp ./nightmode.sh /usr/bin
-	chmod 755 /usr/bin/nightmode.sh
-	chown root:root /usr/bin/nightmode.sh
+	cp ./nightmode /usr/bin
+	chmod 755 /usr/bin/nightmode
+	chown root:root /usr/bin/nightmode
 
 uninstall:
-	rm /usr/bin/nightmode.sh
+	rm /usr/bin/nightmode
 
 run:
-	./nightmode.sh
+	./nightmode
