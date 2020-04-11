@@ -1,15 +1,50 @@
 #!/bin/bash
 
-SCROT_TMP=/tmp/tynlock-scrot.png
-LOCK_TMP=/tmp/tynlock.png
+# i3lock dengan latar belakang blur
 
-scrot -z $SCROT_TMP
+# dependensi :
+#				* i3lock
+#				* scrot
+#				* imagemagick
+#				* pgrep
 
+SCROT_TMP=/tmp/$USER-tynlock-scrot.png
+LOCK_TMP=/tmp/$USER-tynlock.png
+
+# hapus screenshot sebelumnya jika ada
+if [ -f $SCROT_TMP ]
+then
+	rm -f $SCROT_TMP
+
+	# jika gagal hapus
+	if [ $? -gt 0 ]
+	then
+		exit $?
+	fi
+fi
+
+# ambil screenshot
+scrot -o -z $SCROT_TMP
+
+# jika gagal ambil screenshot
+if [ $? -gt 0 ]
+then
+	exit $?
+fi
+
+# tambahkan efek blur dan sedikit warna hitam transparan
 convert $SCROT_TMP -fill black -colorize 40% -filter Gaussian -resize 20% -define filter:sigma=2.5 -resize 500% $LOCK_TMP
 
-rm $SCROT_TMP
+# hapus tmp file
+rm -f $SCROT_TMP
 
-i3lock -i $LOCK_TMP -f -e
-sleep 5
-xset -display $DISPLAY dpms force off
+# lock
+if [ ! $(pgrep i3lock) ]
+then
+	i3lock -i $LOCK_TMP -f -e
+fi
+
+# matikan display
+sleep 2
+pgrep i3lock && xset -display $DISPLAY dpms force off
 
